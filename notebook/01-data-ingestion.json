@@ -7,6 +7,10 @@
 			"referenceName": "sparkpool",
 			"type": "BigDataPoolReference"
 		},
+		"targetSparkConfiguration": {
+			"referenceName": "sparkConfiguration1",
+			"type": "SparkConfigurationReference"
+		},
 		"sessionProperties": {
 			"driverMemory": "28g",
 			"driverCores": 4,
@@ -14,10 +18,10 @@
 			"executorCores": 4,
 			"numExecutors": 2,
 			"conf": {
-				"spark.dynamicAllocation.enabled": "false",
+				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "ad4c0bb2-3c77-4fc1-872b-c6ca680d8ce9"
+				"spark.autotune.trackingId": "08f429e3-7694-4ef5-a709-e1fdcc0fcdf3"
 			}
 		},
 		"metadata": {
@@ -45,7 +49,8 @@
 				"memory": 28,
 				"automaticScaleJobs": false
 			},
-			"sessionKeepAliveTimeout": 30
+			"sessionKeepAliveTimeout": 3600,
+			"targetSparkConfiguration": "sparkConfiguration1"
 		},
 		"cells": [
 			{
@@ -73,7 +78,7 @@
 					"end_date = datetime(2024, 7, 1)\r\n",
 					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]"
 				],
-				"execution_count": 29
+				"execution_count": 1
 			},
 			{
 				"cell_type": "code",
@@ -114,7 +119,7 @@
 					"    \"0PC\", \"1PC\", \"2PC\", \"3PC\"\r\n",
 					"]"
 				],
-				"execution_count": 30
+				"execution_count": 2
 			},
 			{
 				"cell_type": "code",
@@ -166,7 +171,7 @@
 					"        ))\r\n",
 					"    return rows"
 				],
-				"execution_count": 49
+				"execution_count": 3
 			},
 			{
 				"cell_type": "code",
@@ -218,7 +223,7 @@
 					"    print(\"###--- Dataframe generation executed! ---###\")\r\n",
 					"    return df"
 				],
-				"execution_count": 40
+				"execution_count": 4
 			},
 			{
 				"cell_type": "markdown",
@@ -290,19 +295,16 @@
 					"    container_name = \"azfs-flights-historical\"\r\n",
 					"    relative_path = \"flights-historical\" \r\n",
 					"\r\n",
-					"    # Broadcast the dataframe if necessary (example use-case)\r\n",
-					"    broadcasted_df = broadcast(dataframe)\r\n",
-					"\r\n",
 					"    # Write DataFrame to Azure Data Lake Gen2 in Parquet format partitioned by search_date and route\r\n",
 					"    dataframe.write \\\r\n",
 					"        .partitionBy(\"search_date\", \"route\") \\\r\n",
 					"        .option(\"compression\", \"zstd\") \\\r\n",
-					"        .mode(\"overwrite\") \\\r\n",
+					"        .mode(\"append\") \\\r\n",
 					"        .parquet(f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\")\r\n",
 					"    \r\n",
 					"    print(f\"###--- Write datalake executed for search_date! ---###\")"
 				],
-				"execution_count": 47
+				"execution_count": 9
 			},
 			{
 				"cell_type": "code",
@@ -330,7 +332,7 @@
 					"        df = create_dataframe(all_rows)\r\n",
 					"        write_datalake(df)"
 				],
-				"execution_count": 48
+				"execution_count": 10
 			}
 		]
 	}
