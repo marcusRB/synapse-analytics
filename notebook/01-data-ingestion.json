@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "bcb1b709-fde4-4a38-8669-e8dacafe27c6"
+				"spark.autotune.trackingId": "407e3cbd-9e72-41ad-be02-75b37fbeb506"
 			}
 		},
 		"metadata": {
@@ -64,7 +64,37 @@
 						"transient": {
 							"deleting": false
 						}
-					}
+					},
+					"tags": [
+						"parameters"
+					]
+				},
+				"source": [
+					"## Pass parameter from Synapse dataflow\r\n",
+					"'''\r\n",
+					"# Date range from 2023-07-01 to 2024-07-01\r\n",
+					"start_date = datetime(2023, 7, 1)\r\n",
+					"end_date = datetime(2023, 7, 31)\r\n",
+					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]\r\n",
+					"'''\r\n",
+					"start_date = sys.argv('start_date')\r\n",
+					"end_date = sys.argv('end_date')"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					},
+					"tags": []
 				},
 				"source": [
 					"from pyspark.sql import SparkSession, DataFrame\r\n",
@@ -73,9 +103,6 @@
 					"import uuid\r\n",
 					"import random\r\n",
 					"from functools import reduce\r\n",
-					"\r\n",
-					"# Initialize Spark session\r\n",
-					"spark = SparkSession.builder.appName(\"DataLakeWriter\").getOrCreate()\r\n",
 					"\r\n",
 					"################ Params ################\r\n",
 					"\r\n",
@@ -102,10 +129,6 @@
 					"    \"0PC\", \"1PC\", \"2PC\", \"3PC\"\r\n",
 					"]\r\n",
 					"\r\n",
-					"# Date range from 2023-07-01 to 2024-07-01\r\n",
-					"start_date = datetime(2023, 7, 1)\r\n",
-					"end_date = datetime(2023, 7, 31)\r\n",
-					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]\r\n",
 					"\r\n",
 					"################ Functions ################\r\n",
 					"\r\n",
