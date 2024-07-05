@@ -62,7 +62,7 @@
 							"type": "string"
 						},
 						"end_date_param": {
-							"value": "2024-07-01",
+							"value": "2024-01-01",
 							"type": "string"
 						},
 						"dummy_rows_param": {
