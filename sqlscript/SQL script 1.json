@@ -1,0 +1,17 @@
+{
+	"name": "SQL script 1",
+	"properties": {
+		"content": {
+			"query": ";WITH base_table AS\n(\n    SELECT * \n    FROM [default].[dbo].[flights_historical] \n    WHERE [route] IN (\n        'EWR-CAI', 'FLL-LIS', 'JFK-ATH', 'JFK-CAI', 'LAX-ATH', 'LGA-CAI', 'LGW-IST', 'LGW-NRT', 'LHR-AMM',\n        'LHR-DEL', 'LHR-HND', 'LHR-IST', 'LHR-LIM', 'LHR-NRT', 'LHR-SAW', 'MIA-LIS', 'STN-AMM', 'STN-SAW',\n        'YTZ-ATH', 'YTZ-LIS', 'YYZ-ATH', 'YYZ-JNB', 'YYZ-LIS', 'JFK-JNB', 'YYZ-UIO', 'LAX-JNB', 'LHR-JNB',\n        'LHR-SJO', 'SFO-LIS', 'YUL-LIS', 'LAX-LIM', 'YYZ-LIM', 'LAX-LIS', 'MIA-LIM', 'LAX-IST', 'LAX-UIO'\n    ) \n    AND [cabin_class] = 'CAB_ECONOMY'\n),\nraw_data AS (\n    SELECT\n        CASE WHEN DATEPART(HOUR, [outbound_departure_datetime]) < 12 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS outbound_am,\n        CASE WHEN DATEPART(HOUR, [inbound_departure_datetime]) < 12 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS inbound_am,\n        CAST([outbound_departure_datetime] AS DATE) AS outboundDepartureDate,\n        CAST([inbound_departure_datetime] AS DATE) AS inboundDepartureDate,\n        CAST([search_date] AS DATE) AS searchDate,\n        baggage_allowance,\n        route,\n        AVG([total_cost]) AS meanCost,\n        MIN([total_cost]) AS minCost,\n        MAX([total_cost]) AS maxCost,\n        COUNT([total_cost]) AS countCost\n    FROM base_table\n    GROUP BY \n        route, \n        CAST([outbound_departure_datetime] AS DATE), \n        CAST([inbound_departure_datetime] AS DATE), \n        CASE WHEN DATEPART(HOUR, [outbound_departure_datetime]) < 12 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END, \n        CASE WHEN DATEPART(HOUR, [inbound_departure_datetime]) < 12 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END, \n        CAST([search_date] AS DATE),\n        baggage_allowance\n),\nfiltered_data AS (\n    SELECT \n        route, \n        outboundDepartureDate, \n        inboundDepartureDate, \n        outbound_am, \n        inbound_am, \n        baggage_allowance\n    FROM raw_data\n    GROUP BY \n        route, \n        outboundDepartureDate, \n        inboundDepartureDate, \n        outbound_am, \n        inbound_am, \n        baggage_allowance\n)\nSELECT a.*\nFROM raw_data AS a\nINNER JOIN filtered_data AS b\nON \n    a.route = b.route\n    AND a.outboundDepartureDate = b.outboundDepartureDate\n    AND a.inboundDepartureDate = b.inboundDepartureDate\n    AND a.outbound_am = b.outbound_am\n    AND a.inbound_am = b.inbound_am\n    AND a.baggage_allowance = b.baggage_allowance;",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "default",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
