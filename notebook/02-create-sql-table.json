@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "76c947f2-506b-4054-b8ea-0a1a789521cf"
+				"spark.autotune.trackingId": "eb253f3c-e8e7-4db5-bc43-16efd6b91571"
 			}
 		},
 		"metadata": {
@@ -75,9 +75,27 @@
 					}
 				},
 				"source": [
-					""
+					"account_name = \"stflightshistorical001\"\r\n",
+					"container_name = \"azfs-flights-historical\"\r\n",
+					"relative_path = \"flights-historical\" \r\n",
+					"\r\n",
+					"final_path = f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\r\n",
+					"\r\n",
+					"\r\n",
+					"q = f\"\"\"\r\n",
+					"SELECT\r\n",
+					"    TOP 100 *\r\n",
+					"FROM\r\n",
+					"    OPENROWSET(\r\n",
+					"        BULK '{final_path}',\r\n",
+					"        FORMAT='PARQUET'\r\n",
+					"    ) AS [result]\r\n",
+					"\r\n",
+					"\"\"\"\r\n",
+					"\r\n",
+					"spark.sql(q)"
 				],
-				"execution_count": null
+				"execution_count": 2
 			},
 			{
 				"cell_type": "code",

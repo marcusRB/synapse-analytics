@@ -1,0 +1,109 @@
+{
+	"name": "flightsparquet",
+	"properties": {
+		"linkedServiceName": {
+			"referenceName": "synw-flights-bronze-layer-WorkspaceDefaultStorage",
+			"type": "LinkedServiceReference"
+		},
+		"annotations": [],
+		"type": "Parquet",
+		"typeProperties": {
+			"location": {
+				"type": "AzureBlobFSLocation",
+				"folderPath": "flights-historical",
+				"fileSystem": "azfs-flights-historical"
+			},
+			"compressionCodec": "snappy"
+		},
+		"schema": [
+			{
+				"name": "id",
+				"type": "UTF8"
+			},
+			{
+				"name": "flight_code",
+				"type": "UTF8"
+			},
+			{
+				"name": "file_path",
+				"type": "UTF8"
+			},
+			{
+				"name": "source",
+				"type": "UTF8"
+			},
+			{
+				"name": "outbound_departure_datetime",
+				"type": "UTF8"
+			},
+			{
+				"name": "inbound_departure_datetime",
+				"type": "UTF8"
+			},
+			{
+				"name": "city_pair",
+				"type": "UTF8"
+			},
+			{
+				"name": "country",
+				"type": "UTF8"
+			},
+			{
+				"name": "cabin_class",
+				"type": "UTF8"
+			},
+			{
+				"name": "airport_code",
+				"type": "UTF8"
+			},
+			{
+				"name": "fare_type",
+				"type": "UTF8"
+			},
+			{
+				"name": "passengers",
+				"type": "INT32"
+			},
+			{
+				"name": "infants",
+				"type": "INT32"
+			},
+			{
+				"name": "children",
+				"type": "INT32"
+			},
+			{
+				"name": "adults",
+				"type": "INT32"
+			},
+			{
+				"name": "currency",
+				"type": "UTF8"
+			},
+			{
+				"name": "total_cost",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "cost_per_adult",
+				"type": "DOUBLE"
+			},
+			{
+				"name": "baggage_allowance",
+				"type": "UTF8"
+			},
+			{
+				"name": "last_update",
+				"type": "UTF8"
+			},
+			{
+				"name": "search_date",
+				"type": "UTF8"
+			},
+			{
+				"name": "route",
+				"type": "UTF8"
+			}
+		]
+	}
+}

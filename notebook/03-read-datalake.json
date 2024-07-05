@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "2f6f9934-41bc-45fb-a445-2ad9e6c714c4"
+				"spark.autotune.trackingId": "3be48c02-e8c5-4c0c-8870-15e54af18fc6"
 			}
 		},
 		"metadata": {
@@ -118,12 +118,15 @@
 						"transient": {
 							"deleting": false
 						}
-					}
+					},
+					"collapsed": false
 				},
 				"source": [
-					""
+					"-- %%sql\r\n",
+					"\r\n",
+					"-- DROP TABLE default.flights_historical;"
 				],
-				"execution_count": null
+				"execution_count": 10
 			}
 		]
 	}
