@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "4692656d-0825-42c9-83bb-650675251087"
+				"spark.autotune.trackingId": "7a9fffae-a76b-45b2-a226-3619e71ecb62"
 			}
 		},
 		"metadata": {
@@ -97,27 +97,9 @@
 					"'''\r\n",
 					"\r\n",
 					"start_date_param = \"2023-07-01\"\r\n",
-					"end_date_param = \"2023-07-02\""
+					"end_date_param = \"2023-07-03\""
 				],
 				"execution_count": 3
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"start_date"
-				],
-				"execution_count": 4
 			},
 			{
 				"cell_type": "code",
