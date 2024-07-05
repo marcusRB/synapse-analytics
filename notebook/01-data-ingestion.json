@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "c3bae40d-3205-42fe-99b0-9513663f1460"
+				"spark.autotune.trackingId": "eecc0922-c607-450e-a834-0e641cd880d6"
 			}
 		},
 		"metadata": {
@@ -73,7 +73,7 @@
 					"end_date = datetime(2024, 7, 1)\r\n",
 					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]"
 				],
-				"execution_count": null
+				"execution_count": 29
 			},
 			{
 				"cell_type": "code",
@@ -114,7 +114,7 @@
 					"    \"0PC\", \"1PC\", \"2PC\", \"3PC\"\r\n",
 					"]"
 				],
-				"execution_count": null
+				"execution_count": 30
 			},
 			{
 				"cell_type": "code",
@@ -133,10 +133,12 @@
 					"# Function to generate rows in PySpark DataFrame format\r\n",
 					"def generate_rows_for_date(date):\r\n",
 					"    num_rows = random.randint(10_000, 150_0000)  # Generate between 5,000,000 to 150,000,000 rows per day randomly.\r\n",
+					"    print(f\"The total of rows generated is {num_rows}\")\r\n",
+					"    \r\n",
 					"    rows = []\r\n",
 					"    for _ in range(num_rows):\r\n",
 					"        total_person = random.randint(1, 5)\r\n",
-					"        total_flight_cost = random.uniform(21.23, 1043391124.4)\r\n",
+					"        total_flight_cost = random.uniform(21.23, 100000.4)\r\n",
 					"        total_flight_cost_per_passenger = total_flight_cost / total_person\r\n",
 					"        rows.append((\r\n",
 					"            str(uuid.uuid4()),                                               # id\r\n",
@@ -164,7 +166,7 @@
 					"        ))\r\n",
 					"    return rows"
 				],
-				"execution_count": null
+				"execution_count": 31
 			},
 			{
 				"cell_type": "code",
@@ -180,35 +182,22 @@
 					}
 				},
 				"source": [
-					"# Create list of rows for all dates\r\n",
-					"# all_rows = []\r\n",
-					"# for date in date_range:\r\n",
-					"#     all_rows.extend(generate_rows_for_date(date))\r\n",
-					"\r\n",
 					"# Create list of rows for all dates\r\n",
 					"all_rows = []\r\n",
-					"all_rows.extend(generate_rows_for_date(date_range[0]))\r\n",
-					"print(f\"In date rage {date_range[0]} the total flights founded are {len(all_rows)}\")"
+					"count = 0\r\n",
+					"reach = 10\r\n",
+					"while count < reach: \r\n",
+					"    for date in date_range:\r\n",
+					"        all_rows.extend(generate_rows_for_date(date))\r\n",
+					"        print(f\"In date rage {date} the total flights founded are {len(all_rows)}\")\r\n",
+					"        count += 1\r\n",
+					"\r\n",
+					"# # Create list of rows for all dates\r\n",
+					"# all_rows = []\r\n",
+					"# all_rows.extend(generate_rows_for_date(date_range[0]))\r\n",
+					"# print(f\"In date rage {date_range[0]} the total flights founded are {len(all_rows)}\")"
 				],
-				"execution_count": null
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"len(all_rows)"
-				],
-				"execution_count": null
+				"execution_count": 32
 			},
 			{
 				"cell_type": "code",
