@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "a999f156-6489-4646-8b08-0e54683a9458"
+				"spark.autotune.trackingId": "c3bae40d-3205-42fe-99b0-9513663f1460"
 			}
 		},
 		"metadata": {
@@ -73,7 +73,7 @@
 					"end_date = datetime(2024, 7, 1)\r\n",
 					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]"
 				],
-				"execution_count": 1
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -114,7 +114,7 @@
 					"    \"0PC\", \"1PC\", \"2PC\", \"3PC\"\r\n",
 					"]"
 				],
-				"execution_count": 3
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -132,7 +132,7 @@
 				"source": [
 					"# Function to generate rows in PySpark DataFrame format\r\n",
 					"def generate_rows_for_date(date):\r\n",
-					"    num_rows = random.randint(10_000, 150_0000)  # Generate between 100,000 to 150,000 rows per day\r\n",
+					"    num_rows = random.randint(10_000, 150_0000)  # Generate between 5,000,000 to 150,000,000 rows per day randomly.\r\n",
 					"    rows = []\r\n",
 					"    for _ in range(num_rows):\r\n",
 					"        total_person = random.randint(1, 5)\r\n",
@@ -164,7 +164,7 @@
 					"        ))\r\n",
 					"    return rows"
 				],
-				"execution_count": 14
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -190,7 +190,7 @@
 					"all_rows.extend(generate_rows_for_date(date_range[0]))\r\n",
 					"print(f\"In date rage {date_range[0]} the total flights founded are {len(all_rows)}\")"
 				],
-				"execution_count": 15
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -208,7 +208,7 @@
 				"source": [
 					"len(all_rows)"
 				],
-				"execution_count": 16
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -248,7 +248,7 @@
 					"# Display sample data\r\n",
 					"df.show()"
 				],
-				"execution_count": 17
+				"execution_count": null
 			},
 			{
 				"cell_type": "code",
@@ -268,10 +268,14 @@
 					"\r\n",
 					"account_name = \"stflightshistorical001\"\r\n",
 					"container_name = \"azfs-flights-historical\"\r\n",
-					"relative_path = \"flights-historical\"    #abfss://<container_name>@<storage_account_name>.dfs.core.windows.net/<path>\r\n",
-					"adls_path = 'abfss://%s@%s.dfs.core.windows.net/%s' % (container_name, account_name, relative_path)\r\n",
-					"spark.conf.set('fs.%s@%s.dfs.core.windows.net/%s' % (container_name, account_name), \"account_key\")\r\n",
-					"df.write.mode(\"overwrite\").json(adls_path)"
+					"relative_path = \"flights-historical\" \r\n",
+					"\r\n",
+					"# Write DataFrame to Azure Data Lake Gen2 in Parquet format partitioned by search_date\r\n",
+					"df.write \\\r\n",
+					"  .partitionBy(\"search_date\") \\\r\n",
+					"  .mode(\"overwrite\") \\\r\n",
+					"  .parquet(f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\")\r\n",
+					""
 				],
 				"execution_count": null
 			}
