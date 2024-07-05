@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "9afe133e-50a4-47a0-b3e8-f9f5293db1bd"
+				"spark.autotune.trackingId": "0cd18e5a-e5b1-4aed-be3c-6df9ea41a374"
 			}
 		},
 		"metadata": {
@@ -49,6 +49,19 @@
 		},
 		"cells": [
 			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# Create SQL table within Synapse Analytics"
+				]
+			},
+			{
 				"cell_type": "code",
 				"metadata": {
 					"microsoft": {
@@ -63,9 +76,75 @@
 					"\n",
 					"final_path = f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\"\n",
 					"\n",
-					"spark.sql(f\"CREATE TABLE IF NOT EXISTS default.flights_historical USING Parquet LOCATION '{final_path}'\")"
+					"# Create the table pointing to the root folder of the data lake\n",
+					"spark.sql(f\"\"\"\n",
+					"    CREATE TABLE IF NOT EXISTS default.flights_historical (\n",
+					"        id STRING,\n",
+					"        flight_code STRING,\n",
+					"        file_path STRING,\n",
+					"        source STRING,\n",
+					"        search_date STRING,\n",
+					"        outbound_departure_datetime STRING,\n",
+					"        inbound_departure_datetime STRING,\n",
+					"        route STRING,\n",
+					"        city_pair STRING,\n",
+					"        country STRING,\n",
+					"        cabin_class STRING,\n",
+					"        airport_code STRING,\n",
+					"        fare_type STRING,\n",
+					"        passengers INT,\n",
+					"        infants INT,\n",
+					"        children INT,\n",
+					"        adults INT,\n",
+					"        currency STRING,\n",
+					"        total_cost DOUBLE,\n",
+					"        cost_per_adult DOUBLE,\n",
+					"        baggage_allowance STRING,\n",
+					"        last_update STRING\n",
+					"    )\n",
+					"    USING Parquet\n",
+					"    LOCATION '{final_path}'\n",
+					"\"\"\")"
 				],
-				"execution_count": 5
+				"execution_count": 11
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# SQL Query through Synapse Analytics"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# Select data from a specific partition\r\n",
+					"df = spark.sql(\"\"\"\r\n",
+					"    SELECT * FROM default.flights_historical\r\n",
+					"    WHERE search_date = '2023-07-01'\r\n",
+					"\"\"\")\r\n",
+					"\r\n",
+					"# Show the DataFrame\r\n",
+					"df.show()"
+				],
+				"execution_count": null
 			}
 		]
 	}
