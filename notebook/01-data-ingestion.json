@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "f41c33b1-9e11-4d78-947a-77aec90c5d6a"
+				"spark.autotune.trackingId": "90d6c4a9-aeca-4c51-bb25-3be0e07b8e10"
 			}
 		},
 		"metadata": {
@@ -238,13 +238,13 @@
 					"\r\n",
 					"\r\n",
 					"# Function to generate and write data in batches\r\n",
-					"def generate_and_write_data(start_date, end_date, batch_row_threshold, dummy_rows_param=False):\r\n",
+					"def generate_and_write_data(start_date, end_date, batch_row_threshold, dummy_rows_param=\"true\"):\r\n",
 					"    current_date = start_date\r\n",
 					"    \r\n",
 					"    while current_date <= end_date:\r\n",
-					"        if dummy_rows_param:\r\n",
+					"        if dummy_rows_param == 'true':\r\n",
 					"            total_rows_for_day = random.randint(1_000_000, 10_500_000)\r\n",
-					"        else:\r\n",
+					"        if dummy_rows_param == 'false':\r\n",
 					"            total_rows_for_day = random.randint(1_000, 10_500)\r\n",
 					"        rows_accumulated = 0\r\n",
 					"\r\n",
@@ -279,7 +279,7 @@
 					}
 				},
 				"source": [
-					"spark.close()"
+					"spark.close"
 				],
 				"execution_count": null
 			},
