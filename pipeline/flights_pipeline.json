@@ -56,6 +56,16 @@
 						"referenceName": "01-data-ingestion",
 						"type": "NotebookReference"
 					},
+					"parameters": {
+						"start_date_param": {
+							"value": "2023-07-01",
+							"type": "string"
+						},
+						"end_date_param": {
+							"value": "2023-07-03",
+							"type": "string"
+						}
+					},
 					"snapshot": true,
 					"sparkPool": {
 						"referenceName": "sparkpool",
