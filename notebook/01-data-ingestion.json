@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "eecc0922-c607-450e-a834-0e641cd880d6"
+				"spark.autotune.trackingId": "ad4c0bb2-3c77-4fc1-872b-c6ca680d8ce9"
 			}
 		},
 		"metadata": {
@@ -132,9 +132,9 @@
 				"source": [
 					"# Function to generate rows in PySpark DataFrame format\r\n",
 					"def generate_rows_for_date(date):\r\n",
-					"    num_rows = random.randint(10_000, 150_0000)  # Generate between 5,000,000 to 150,000,000 rows per day randomly.\r\n",
+					"    num_rows = random.randint(100_000, 1_500_000)  # Generate between 5,000,000 to 150,000,000 rows per day randomly.\r\n",
 					"    print(f\"The total of rows generated is {num_rows}\")\r\n",
-					"    \r\n",
+					"\r\n",
 					"    rows = []\r\n",
 					"    for _ in range(num_rows):\r\n",
 					"        total_person = random.randint(1, 5)\r\n",
@@ -166,7 +166,143 @@
 					"        ))\r\n",
 					"    return rows"
 				],
-				"execution_count": 31
+				"execution_count": 49
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def create_dataframe(rows_list):\r\n",
+					"\r\n",
+					"    # Create RDD from all_rows\r\n",
+					"    rdd = spark.sparkContext.parallelize(rows_list)\r\n",
+					"\r\n",
+					"    # Create DataFrame schema\r\n",
+					"    schema = StructType([\r\n",
+					"        StructField(\"id\", StringType(), True),\r\n",
+					"        StructField(\"flight_code\", StringType(), True),\r\n",
+					"        StructField(\"file_path\", StringType(), True),\r\n",
+					"        StructField(\"source\", StringType(), True),\r\n",
+					"        StructField(\"search_date\", StringType(), True),\r\n",
+					"        StructField(\"outbound_departure_datetime\", StringType(), True),\r\n",
+					"        StructField(\"inbound_departure_datetime\", StringType(), True),\r\n",
+					"        StructField(\"route\", StringType(), True),\r\n",
+					"        StructField(\"city_pair\", StringType(), True),\r\n",
+					"        StructField(\"country\", StringType(), True),\r\n",
+					"        StructField(\"cabin_class\", StringType(), True),\r\n",
+					"        StructField(\"airport_code\", StringType(), True),\r\n",
+					"        StructField(\"fare_type\", StringType(), True),\r\n",
+					"        StructField(\"passengers\", IntegerType(), True),\r\n",
+					"        StructField(\"infants\", IntegerType(), True),\r\n",
+					"        StructField(\"children\", IntegerType(), True),\r\n",
+					"        StructField(\"adults\", IntegerType(), True),\r\n",
+					"        StructField(\"currency\", StringType(), True),\r\n",
+					"        StructField(\"total_cost\", DoubleType(), True),\r\n",
+					"        StructField(\"cost_per_adult\", DoubleType(), True),\r\n",
+					"        StructField(\"baggage_allowance\", StringType(), True),\r\n",
+					"        StructField(\"last_update\", StringType(), True)\r\n",
+					"    ])\r\n",
+					"\r\n",
+					"    # Create DataFrame from RDD applying the schema\r\n",
+					"    df = spark.createDataFrame(rdd, schema=schema)\r\n",
+					"    print(\"###--- Dataframe generation executed! ---###\")\r\n",
+					"    return df"
+				],
+				"execution_count": 40
+			},
+			{
+				"cell_type": "markdown",
+				"metadata": {
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"'''\r\n",
+					"Compression ratio\r\n",
+					"\r\n",
+					"\r\n",
+					"When compressing large datasets partitioned in a data lake using PySpark, the choice of compression codec can significantly affect both the performance and the size of the saved files. Below are some commonly used compression codecs, with a brief overview of their performance and suitability for large datasets:\r\n",
+					"\r\n",
+					"    Snappy:\r\n",
+					"        Pros: Fast compression and decompression, reasonable compression ratio.\r\n",
+					"        Cons: Slightly larger file sizes compared to other codecs like gzip or zstd.\r\n",
+					"        Best Use: When speed is a priority over the compression ratio.\r\n",
+					"    Gzip:\r\n",
+					"        Pros: Good compression ratio.\r\n",
+					"        Cons: Slower compression and decompression compared to snappy.\r\n",
+					"        Best Use: When the compression ratio is more important than speed.\r\n",
+					"    LZO:\r\n",
+					"        Pros: Fast compression and decompression, reasonable compression ratio.\r\n",
+					"        Cons: Not as widely supported as snappy or gzip.\r\n",
+					"        Best Use: Similar to snappy, for scenarios where speed is important.\r\n",
+					"    Brotli:\r\n",
+					"        Pros: Very good compression ratio.\r\n",
+					"        Cons: Slower than gzip, but faster than zstd in many cases.\r\n",
+					"        Best Use: When you need a good balance between compression ratio and speed.\r\n",
+					"    LZ4:\r\n",
+					"        Pros: Extremely fast compression and decompression.\r\n",
+					"        Cons: Lower compression ratio compared to gzip or zstd.\r\n",
+					"        Best Use: When decompression speed is critical (e.g., real-time applications).\r\n",
+					"    Zstandard (zstd):\r\n",
+					"        Pros: Excellent compression ratio, good speed.\r\n",
+					"        Cons: Slightly slower than snappy but generally faster than gzip.\r\n",
+					"        Best Use: When you need a high compression ratio with reasonable speed.\r\n",
+					"\r\n",
+					"Recommended Choice:\r\n",
+					"\r\n",
+					"    For general purposes: Snappy is often recommended due to its balance of speed and compression ratio. It's particularly suitable for big data processing where quick read/write operations are crucial.\r\n",
+					"    For better compression ratio: Zstandard (zstd) is an excellent choice as it offers a good balance of speed and compression efficiency.\r\n",
+					"    For maximum compression ratio: Gzip or Brotli can be considered, but they are slower compared to Snappy and Zstandard.\r\n",
+					"    \r\n",
+					"'''"
+				]
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"def write_datalake(dataframe):\r\n",
+					"    # Writing DLGen2\r\n",
+					"    account_name = \"stflightshistorical001\"\r\n",
+					"    container_name = \"azfs-flights-historical\"\r\n",
+					"    relative_path = \"flights-historical\" \r\n",
+					"\r\n",
+					"    # Broadcast the dataframe if necessary (example use-case)\r\n",
+					"    broadcasted_df = broadcast(dataframe)\r\n",
+					"\r\n",
+					"    # Write DataFrame to Azure Data Lake Gen2 in Parquet format partitioned by search_date and route\r\n",
+					"    dataframe.write \\\r\n",
+					"        .partitionBy(\"search_date\", \"route\") \\\r\n",
+					"        .option(\"compression\", \"zstd\") \\\r\n",
+					"        .mode(\"overwrite\") \\\r\n",
+					"        .parquet(f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\")\r\n",
+					"    \r\n",
+					"    print(f\"###--- Write datalake executed for search_date! ---###\")"
+				],
+				"execution_count": 47
 			},
 			{
 				"cell_type": "code",
@@ -185,88 +321,16 @@
 					"# Create list of rows for all dates\r\n",
 					"all_rows = []\r\n",
 					"count = 0\r\n",
-					"reach = 10\r\n",
+					"reach = 180\r\n",
 					"while count < reach: \r\n",
 					"    for date in date_range:\r\n",
 					"        all_rows.extend(generate_rows_for_date(date))\r\n",
 					"        print(f\"In date rage {date} the total flights founded are {len(all_rows)}\")\r\n",
 					"        count += 1\r\n",
-					"\r\n",
-					"# # Create list of rows for all dates\r\n",
-					"# all_rows = []\r\n",
-					"# all_rows.extend(generate_rows_for_date(date_range[0]))\r\n",
-					"# print(f\"In date rage {date_range[0]} the total flights founded are {len(all_rows)}\")"
+					"        df = create_dataframe(all_rows)\r\n",
+					"        write_datalake(df)"
 				],
-				"execution_count": 32
-			},
-			{
-				"cell_type": "code",
-				"source": [
-					"# Create RDD from all_rows\r\n",
-					"rdd = spark.sparkContext.parallelize(all_rows)\r\n",
-					"\r\n",
-					"# Create DataFrame schema\r\n",
-					"schema = StructType([\r\n",
-					"    StructField(\"id\", StringType(), True),\r\n",
-					"    StructField(\"flight_code\", StringType(), True),\r\n",
-					"    StructField(\"file_path\", StringType(), True),\r\n",
-					"    StructField(\"source\", StringType(), True),\r\n",
-					"    StructField(\"search_date\", StringType(), True),\r\n",
-					"    StructField(\"outbound_departure_datetime\", StringType(), True),\r\n",
-					"    StructField(\"inbound_departure_datetime\", StringType(), True),\r\n",
-					"    StructField(\"route\", StringType(), True),\r\n",
-					"    StructField(\"city_pair\", StringType(), True),\r\n",
-					"    StructField(\"country\", StringType(), True),\r\n",
-					"    StructField(\"cabin_class\", StringType(), True),\r\n",
-					"    StructField(\"airport_code\", StringType(), True),\r\n",
-					"    StructField(\"fare_type\", StringType(), True),\r\n",
-					"    StructField(\"passengers\", IntegerType(), True),\r\n",
-					"    StructField(\"infants\", IntegerType(), True),\r\n",
-					"    StructField(\"children\", IntegerType(), True),\r\n",
-					"    StructField(\"adults\", IntegerType(), True),\r\n",
-					"    StructField(\"currency\", StringType(), True),\r\n",
-					"    StructField(\"total_cost\", DoubleType(), True),\r\n",
-					"    StructField(\"cost_per_adult\", DoubleType(), True),\r\n",
-					"    StructField(\"baggage_allowance\", StringType(), True),\r\n",
-					"    StructField(\"last_update\", StringType(), True)\r\n",
-					"])\r\n",
-					"\r\n",
-					"# Create DataFrame from RDD applying the schema\r\n",
-					"df = spark.createDataFrame(rdd, schema=schema)\r\n",
-					"\r\n",
-					"# Display sample data\r\n",
-					"df.show()"
-				],
-				"execution_count": null
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"# Writing DLGen2\r\n",
-					"\r\n",
-					"account_name = \"stflightshistorical001\"\r\n",
-					"container_name = \"azfs-flights-historical\"\r\n",
-					"relative_path = \"flights-historical\" \r\n",
-					"\r\n",
-					"# Write DataFrame to Azure Data Lake Gen2 in Parquet format partitioned by search_date\r\n",
-					"df.write \\\r\n",
-					"  .partitionBy(\"search_date\") \\\r\n",
-					"  .mode(\"overwrite\") \\\r\n",
-					"  .parquet(f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\")\r\n",
-					""
-				],
-				"execution_count": null
+				"execution_count": 48
 			}
 		]
 	}

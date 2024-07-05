@@ -1,0 +1,17 @@
+{
+	"name": "SQL script 2",
+	"properties": {
+		"content": {
+			"query": "SELECT TOP (100) [id]\n,[flight_code]\n,[file_path]\n,[source]\n,[outbound_departure_datetime]\n,[inbound_departure_datetime]\n,[route]\n,[city_pair]\n,[country]\n,[cabin_class]\n,[airport_code]\n,[fare_type]\n,[passengers]\n,[infants]\n,[children]\n,[adults]\n,[currency]\n,[total_cost]\n,[cost_per_adult]\n,[baggage_allowance]\n,[last_update]\n,[search_date]\n FROM [default].[dbo].[flights_historical]",
+			"metadata": {
+				"language": "sql"
+			},
+			"currentConnection": {
+				"databaseName": "default",
+				"poolName": "Built-in"
+			},
+			"resultLimit": 5000
+		},
+		"type": "SqlQuery"
+	}
+}
