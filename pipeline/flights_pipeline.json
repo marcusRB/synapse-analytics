@@ -62,7 +62,7 @@
 							"type": "string"
 						},
 						"end_date_param": {
-							"value": "2023-07-03",
+							"value": "2024-07-01",
 							"type": "string"
 						},
 						"dummy_rows_param": {
@@ -78,11 +78,11 @@
 					"executorSize": "Small",
 					"conf": {
 						"spark.dynamicAllocation.enabled": false,
-						"spark.dynamicAllocation.minExecutors": 2,
-						"spark.dynamicAllocation.maxExecutors": 2
+						"spark.dynamicAllocation.minExecutors": 4,
+						"spark.dynamicAllocation.maxExecutors": 4
 					},
 					"driverSize": "Small",
-					"numExecutors": 2
+					"numExecutors": 4
 				}
 			},
 			{
@@ -110,8 +110,8 @@
 						"type": "DataFlowReference"
 					},
 					"compute": {
-						"coreCount": 8,
-						"computeType": "General"
+						"coreCount": 32,
+						"computeType": "MemoryOptimized"
 					},
 					"traceLevel": "Fine"
 				}

@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "a838c31d-01d8-405f-85c9-273d7aa9f5ae"
+				"spark.autotune.trackingId": "79b32697-614b-48d9-9b5b-77b4864a2552"
 			}
 		},
 		"metadata": {
@@ -96,8 +96,8 @@
 					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]\r\n",
 					"'''\r\n",
 					"\r\n",
-					"start_date_param = \"2023-07-01\"\r\n",
-					"end_date_param = \"2023-07-03\"\r\n",
+					"start_date_param = \"\"\r\n",
+					"end_date_param = \"\"\r\n",
 					"dummy_rows_param = \"\""
 				],
 				"execution_count": 3
