@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "d0db8b04-25fa-47c2-b8d5-5ead38daa02d"
+				"spark.autotune.trackingId": "a999f156-6489-4646-8b08-0e54683a9458"
 			}
 		},
 		"metadata": {
@@ -50,6 +50,17 @@
 		"cells": [
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
 				"source": [
 					"from pyspark.sql import SparkSession\r\n",
 					"from pyspark.sql.types import StringType, IntegerType, DoubleType, StructType, StructField\r\n",
@@ -60,7 +71,25 @@
 					"# Date range from 2023-07-01 to 2024-07-01\r\n",
 					"start_date = datetime(2023, 7, 1)\r\n",
 					"end_date = datetime(2024, 7, 1)\r\n",
-					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]\r\n",
+					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]"
+				],
+				"execution_count": 1
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# Params\r\n",
 					"\r\n",
 					"# Providers\r\n",
 					"providers = [\r\n",
@@ -83,11 +112,27 @@
 					"\r\n",
 					"baggage = [\r\n",
 					"    \"0PC\", \"1PC\", \"2PC\", \"3PC\"\r\n",
-					"]\r\n",
-					"\r\n",
+					"]"
+				],
+				"execution_count": 3
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
 					"# Function to generate rows in PySpark DataFrame format\r\n",
 					"def generate_rows_for_date(date):\r\n",
-					"    num_rows = random.randint(100000, 150000)  # Generate between 100,000 to 150,000 rows per day\r\n",
+					"    num_rows = random.randint(10_000, 150_0000)  # Generate between 100,000 to 150,000 rows per day\r\n",
 					"    rows = []\r\n",
 					"    for _ in range(num_rows):\r\n",
 					"        total_person = random.randint(1, 5)\r\n",
@@ -95,7 +140,7 @@
 					"        total_flight_cost_per_passenger = total_flight_cost / total_person\r\n",
 					"        rows.append((\r\n",
 					"            str(uuid.uuid4()),                                               # id\r\n",
-					"            f\"L1{{{random.choice(routes)}}}_L2{random.randint(1000, 9999)}1PC\",  # flight_code\r\n",
+					"            f\"L1{{{random.choice(routes)}}}_L2{random.randint(1000, 9999)}{random.choice(baggage)}\",  # flight_code\r\n",
 					"            f\"flightHistory/{date.strftime('%Y-%m-%d')}/{uuid.uuid4().hex}.json.gz\",  # file_path\r\n",
 					"            random.choice(providers),                                         # source\r\n",
 					"            date.strftime(\"%Y-%m-%d\"),                                         # search_date\r\n",
@@ -111,19 +156,63 @@
 					"            random.randint(0, 1),                                              # infants\r\n",
 					"            random.randint(0, 2),                                              # children\r\n",
 					"            total_person,                                                     # adults\r\n",
-					"            random.choice(currencies),                                                            # currency\r\n",
+					"            random.choice(currencies),                                        # currency\r\n",
 					"            total_flight_cost,                                                # total_cost\r\n",
 					"            total_flight_cost_per_passenger,                                  # cost_per_adult\r\n",
-					"            random.choice(baggage),                                                            # baggage_allowance\r\n",
+					"            random.choice(baggage),                                           # baggage_allowance\r\n",
 					"            date.strftime(\"%Y-%m-%d %H:%M:%S\")                                # last_update\r\n",
 					"        ))\r\n",
-					"    return rows\r\n",
+					"    return rows"
+				],
+				"execution_count": 14
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# Create list of rows for all dates\r\n",
+					"# all_rows = []\r\n",
+					"# for date in date_range:\r\n",
+					"#     all_rows.extend(generate_rows_for_date(date))\r\n",
 					"\r\n",
 					"# Create list of rows for all dates\r\n",
 					"all_rows = []\r\n",
-					"for date in date_range:\r\n",
-					"    all_rows.extend(generate_rows_for_date(date))\r\n",
-					"\r\n",
+					"all_rows.extend(generate_rows_for_date(date_range[0]))\r\n",
+					"print(f\"In date rage {date_range[0]} the total flights founded are {len(all_rows)}\")"
+				],
+				"execution_count": 15
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"len(all_rows)"
+				],
+				"execution_count": 16
+			},
+			{
+				"cell_type": "code",
+				"source": [
 					"# Create RDD from all_rows\r\n",
 					"rdd = spark.sparkContext.parallelize(all_rows)\r\n",
 					"\r\n",
@@ -157,10 +246,34 @@
 					"df = spark.createDataFrame(rdd, schema=schema)\r\n",
 					"\r\n",
 					"# Display sample data\r\n",
-					"df.show()\r\n",
-					""
+					"df.show()"
 				],
-				"execution_count": 1
+				"execution_count": 17
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"# Writing DLGen2\r\n",
+					"\r\n",
+					"account_name = \"stflightshistorical001\"\r\n",
+					"container_name = \"azfs-flights-historical\"\r\n",
+					"relative_path = \"flights-historical\"    #abfss://<container_name>@<storage_account_name>.dfs.core.windows.net/<path>\r\n",
+					"adls_path = 'abfss://%s@%s.dfs.core.windows.net/%s' % (container_name, account_name, relative_path)\r\n",
+					"spark.conf.set('fs.%s@%s.dfs.core.windows.net/%s' % (container_name, account_name), \"account_key\")\r\n",
+					"df.write.mode(\"overwrite\").json(adls_path)"
+				],
+				"execution_count": null
 			}
 		]
 	}
