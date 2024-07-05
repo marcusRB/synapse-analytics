@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "f6f96a6b-6918-4cad-b0a5-cb5ed005a648"
+				"spark.autotune.trackingId": "95a8ea6a-de4a-4b37-aa03-b83c0d0912cb"
 			}
 		},
 		"metadata": {
@@ -65,7 +65,7 @@
 					"\n",
 					"spark.sql(f\"CREATE TABLE IF NOT EXISTS default.flights_historical USING Parquet LOCATION '{final_path}'\")"
 				],
-				"execution_count": 4
+				"execution_count": 5
 			}
 		]
 	}
