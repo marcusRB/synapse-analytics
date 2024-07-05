@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "6533fbc0-a606-419e-91cc-72a3d65c4bc3"
+				"spark.autotune.trackingId": "bd5c4337-7f3b-480d-b8fb-fc169ecfcfad"
 			}
 		},
 		"metadata": {
@@ -104,7 +104,7 @@
 					"\r\n",
 					"# Date range from 2023-07-01 to 2024-07-01\r\n",
 					"start_date = datetime(2023, 7, 1)\r\n",
-					"end_date = datetime(2024, 7, 1)\r\n",
+					"end_date = datetime(2023, 7, 31)\r\n",
 					"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]\r\n",
 					"\r\n",
 					"################ Functions ################\r\n",
@@ -180,7 +180,6 @@
 					"\r\n",
 					"### Write in DataLakeGen v2\r\n",
 					"def write_datalake(dataframe):\r\n",
-					"    # Writing DLGen2\r\n",
 					"    account_name = \"stflightshistorical001\"\r\n",
 					"    container_name = \"azfs-flights-historical\"\r\n",
 					"    relative_path = \"flights-historical\" \r\n",
