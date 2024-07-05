@@ -1,0 +1,14 @@
+{
+	"name": "customSparkConfiguration",
+	"properties": {
+		"configs": {
+			"spark.rpc.message.maxSize": "256"
+		},
+		"created": "2024-07-05T18:33:18.9520000+02:00",
+		"createdBy": "mrusso@knowmadmood.com",
+		"annotations": [],
+		"configMergeRule": {
+			"artifact.currentOperation.spark.rpc.message.maxSize": "replace"
+		}
+	}
+}
