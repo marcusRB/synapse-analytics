@@ -1,5 +1,5 @@
 {
-	"name": "Notebook 1",
+	"name": "02-create-sql-table",
 	"properties": {
 		"nbformat": 4,
 		"nbformat_minor": 2,
@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "false",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "95a8ea6a-de4a-4b37-aa03-b83c0d0912cb"
+				"spark.autotune.trackingId": "9afe133e-50a4-47a0-b3e8-f9f5293db1bd"
 			}
 		},
 		"metadata": {
