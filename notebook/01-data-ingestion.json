@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "7a9fffae-a76b-45b2-a226-3619e71ecb62"
+				"spark.autotune.trackingId": "a838c31d-01d8-405f-85c9-273d7aa9f5ae"
 			}
 		},
 		"metadata": {
@@ -97,7 +97,8 @@
 					"'''\r\n",
 					"\r\n",
 					"start_date_param = \"2023-07-01\"\r\n",
-					"end_date_param = \"2023-07-03\""
+					"end_date_param = \"2023-07-03\"\r\n",
+					"dummy_rows_param = \"\""
 				],
 				"execution_count": 3
 			},
@@ -237,11 +238,14 @@
 					"\r\n",
 					"\r\n",
 					"# Function to generate and write data in batches\r\n",
-					"def generate_and_write_data(start_date, end_date, batch_row_threshold):\r\n",
+					"def generate_and_write_data(start_date, end_date, batch_row_threshold, dummy_rows_param=False):\r\n",
 					"    current_date = start_date\r\n",
 					"    \r\n",
 					"    while current_date <= end_date:\r\n",
-					"        total_rows_for_day = random.randint(1_000_000, 10_500_000)\r\n",
+					"        if dummy_rows_param:\r\n",
+					"            total_rows_for_day = random.randint(1_000_000, 10_500_000)\r\n",
+					"        else:\r\n",
+					"            total_rows_for_day = random.randint(1_000, 10_500)\r\n",
 					"        rows_accumulated = 0\r\n",
 					"\r\n",
 					"        while rows_accumulated < total_rows_for_day:\r\n",

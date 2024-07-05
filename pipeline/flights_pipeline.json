@@ -64,6 +64,10 @@
 						"end_date_param": {
 							"value": "2023-07-03",
 							"type": "string"
+						},
+						"dummy_rows_param": {
+							"value": false,
+							"type": "bool"
 						}
 					},
 					"snapshot": true,
