@@ -21,7 +21,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "bd5c4337-7f3b-480d-b8fb-fc169ecfcfad"
+				"spark.autotune.trackingId": "bcb1b709-fde4-4a38-8669-e8dacafe27c6"
 			}
 		},
 		"metadata": {
@@ -271,57 +271,6 @@
 					"    \r\n",
 					"'''"
 				]
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"# Usage example\r\n",
-					"batch_size = 10  # Number of days' worth of data per batch\r\n",
-					"generate_and_write_data(start_date, end_date, batch_size)\r\n",
-					"\r\n",
-					"\r\n",
-					"# # Create list of rows for all dates\r\n",
-					"# all_rows = []\r\n",
-					"# count = 0\r\n",
-					"# reach = 180\r\n",
-					"# while count < reach: \r\n",
-					"#     for date in date_range:\r\n",
-					"#         all_rows.extend(generate_rows_for_date(date))\r\n",
-					"#         print(f\"In date rage {date} the total flights founded are {len(all_rows)}\")\r\n",
-					"#         count += 1\r\n",
-					"#         df = create_dataframe(all_rows)\r\n",
-					"#         write_datalake(df)"
-				],
-				"execution_count": 21
-			},
-			{
-				"cell_type": "code",
-				"metadata": {
-					"jupyter": {
-						"source_hidden": false,
-						"outputs_hidden": false
-					},
-					"nteract": {
-						"transient": {
-							"deleting": false
-						}
-					}
-				},
-				"source": [
-					"spark.read"
-				],
-				"execution_count": null
 			}
 		]
 	}
