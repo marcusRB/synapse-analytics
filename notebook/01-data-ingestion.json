@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "46688841-d03e-443f-a06b-865e51158284"
+				"spark.autotune.trackingId": "82c98055-e891-4e2a-9299-2e3bec9b2056"
 			}
 		},
 		"metadata": {
@@ -48,6 +48,29 @@
 			"sessionKeepAliveTimeout": 3600
 		},
 		"cells": [
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"from pyspark.sql import SparkSession, DataFrame\r\n",
+					"from pyspark.sql.types import StringType, IntegerType, DoubleType, StructType, StructField\r\n",
+					"from datetime import datetime, timedelta\r\n",
+					"import uuid\r\n",
+					"import random\r\n",
+					"from functools import reduce"
+				],
+				"execution_count": null
+			},
 			{
 				"cell_type": "code",
 				"metadata": {
@@ -95,12 +118,7 @@
 					"tags": []
 				},
 				"source": [
-					"from pyspark.sql import SparkSession, DataFrame\r\n",
-					"from pyspark.sql.types import StringType, IntegerType, DoubleType, StructType, StructField\r\n",
-					"from datetime import datetime, timedelta\r\n",
-					"import uuid\r\n",
-					"import random\r\n",
-					"from functools import reduce\r\n",
+					"\r\n",
 					"\r\n",
 					"################ Params ################\r\n",
 					"\r\n",
