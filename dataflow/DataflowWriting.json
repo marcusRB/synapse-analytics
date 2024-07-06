@@ -58,7 +58,10 @@
 				"     format: 'table',",
 				"     database: 'default',",
 				"     tableName: 'flightsDB_historical',",
-				"     recreate:true) ~> sinkSQLPool"
+				"     recreate:true,",
+				"     partitionBy('hash', 15,",
+				"          route",
+				"     )) ~> sinkSQLPool"
 			]
 		}
 	}

@@ -2,7 +2,7 @@
 	"name": "SQL script 3",
 	"properties": {
 		"content": {
-			"query": "SELECT [search_date], count(*)\n FROM [default].[dbo].[flightsDB_historical]\n GROUP BY [search_date]",
+			"query": "SELECT [search_date], count(*)\n FROM [default].[dbo].[flightsDB_historical]\n GROUP BY [search_date];\n\nSELECT COUNT(*)  FROM [default].[dbo].[flightsDB_historical];",
 			"metadata": {
 				"language": "sql"
 			},

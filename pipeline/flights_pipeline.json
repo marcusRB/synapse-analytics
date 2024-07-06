@@ -42,6 +42,8 @@
 			{
 				"name": "Pyspark-data-ingest",
 				"type": "SynapseNotebook",
+				"state": "Inactive",
+				"onInactiveMarkAs": "Succeeded",
 				"dependsOn": [],
 				"policy": {
 					"timeout": "0.12:00:00",
@@ -75,14 +77,14 @@
 						"referenceName": "sparkpool",
 						"type": "BigDataPoolReference"
 					},
-					"executorSize": "Small",
+					"executorSize": "Large",
 					"conf": {
 						"spark.dynamicAllocation.enabled": false,
-						"spark.dynamicAllocation.minExecutors": 2,
-						"spark.dynamicAllocation.maxExecutors": 2
+						"spark.dynamicAllocation.minExecutors": 8,
+						"spark.dynamicAllocation.maxExecutors": 8
 					},
-					"driverSize": "Small",
-					"numExecutors": 2
+					"driverSize": "Large",
+					"numExecutors": 8
 				}
 			},
 			{
