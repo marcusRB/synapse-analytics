@@ -1,0 +1,1183 @@
+{
+	"$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+	"contentVersion": "1.0.0.0",
+	"parameters": {
+		"workspaceName": {
+			"type": "string",
+			"metadata": "Workspace name",
+			"defaultValue": "synw-flights-bronze-layer"
+		},
+		"synw-flights-bronze-layer-WorkspaceDefaultSqlServer_connectionString": {
+			"type": "secureString",
+			"metadata": "Secure string for 'connectionString' of 'synw-flights-bronze-layer-WorkspaceDefaultSqlServer'",
+			"defaultValue": "Integrated Security=False;Encrypt=True;Connection Timeout=30;Data Source=tcp:synw-flights-bronze-layer.sql.azuresynapse.net,1433;Initial Catalog=@{linkedService().DBName}"
+		},
+		"synw-flights-bronze-layer-WorkspaceDefaultStorage_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://stflightshistorical001.dfs.core.windows.net"
+		}
+	},
+	"variables": {
+		"workspaceId": "[concat('Microsoft.Synapse/workspaces/', parameters('workspaceName'))]"
+	},
+	"resources": [
+		{
+			"name": "[concat(parameters('workspaceName'), '/flights_pipeline')]",
+			"type": "Microsoft.Synapse/workspaces/pipelines",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"activities": [
+					{
+						"name": "Get Metadata",
+						"type": "GetMetadata",
+						"dependsOn": [
+							{
+								"activity": "DataFlow_to_DB",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataset": {
+								"referenceName": "flightsparquet",
+								"type": "DatasetReference",
+								"parameters": {}
+							},
+							"fieldList": [
+								"itemName"
+							],
+							"storeSettings": {
+								"type": "AzureBlobFSReadSettings",
+								"recursive": true,
+								"enablePartitionDiscovery": false
+							},
+							"formatSettings": {
+								"type": "ParquetReadSettings"
+							}
+						}
+					},
+					{
+						"name": "Pyspark-data-ingest",
+						"type": "SynapseNotebook",
+						"state": "Inactive",
+						"onInactiveMarkAs": "Succeeded",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"notebook": {
+								"referenceName": "01-data-ingestion",
+								"type": "NotebookReference"
+							},
+							"parameters": {
+								"start_date_param": {
+									"value": "2023-07-01",
+									"type": "string"
+								},
+								"end_date_param": {
+									"value": "2024-07-01",
+									"type": "string"
+								},
+								"dummy_rows_param": {
+									"value": true,
+									"type": "bool"
+								}
+							},
+							"snapshot": true,
+							"sparkPool": {
+								"referenceName": "sparkpool",
+								"type": "BigDataPoolReference"
+							},
+							"executorSize": "Large",
+							"conf": {
+								"spark.dynamicAllocation.enabled": false,
+								"spark.dynamicAllocation.minExecutors": 8,
+								"spark.dynamicAllocation.maxExecutors": 8
+							},
+							"driverSize": "Large",
+							"numExecutors": 8
+						}
+					},
+					{
+						"name": "DataFlow_to_DB",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [
+							{
+								"activity": "Pyspark-data-ingest",
+								"dependencyConditions": [
+									"Succeeded"
+								]
+							}
+						],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DataflowWriting",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"parquetfiles": {},
+									"sinkSQLPool": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 32,
+								"computeType": "MemoryOptimized"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/flightsparquet')]",
+				"[concat(variables('workspaceId'), '/notebooks/01-data-ingestion')]",
+				"[concat(variables('workspaceId'), '/bigDataPools/sparkpool')]",
+				"[concat(variables('workspaceId'), '/dataflows/DataflowWriting')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/flightsparquet')]",
+			"type": "Microsoft.Synapse/workspaces/datasets",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "synw-flights-bronze-layer-WorkspaceDefaultStorage",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "Parquet",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobFSLocation",
+						"folderPath": "flights-historical",
+						"fileSystem": "azfs-flights-historical"
+					},
+					"compressionCodec": "snappy"
+				},
+				"schema": [
+					{
+						"name": "id",
+						"type": "UTF8"
+					},
+					{
+						"name": "flight_code",
+						"type": "UTF8"
+					},
+					{
+						"name": "file_path",
+						"type": "UTF8"
+					},
+					{
+						"name": "source",
+						"type": "UTF8"
+					},
+					{
+						"name": "outbound_departure_datetime",
+						"type": "UTF8"
+					},
+					{
+						"name": "inbound_departure_datetime",
+						"type": "UTF8"
+					},
+					{
+						"name": "city_pair",
+						"type": "UTF8"
+					},
+					{
+						"name": "country",
+						"type": "UTF8"
+					},
+					{
+						"name": "cabin_class",
+						"type": "UTF8"
+					},
+					{
+						"name": "airport_code",
+						"type": "UTF8"
+					},
+					{
+						"name": "fare_type",
+						"type": "UTF8"
+					},
+					{
+						"name": "passengers",
+						"type": "INT32"
+					},
+					{
+						"name": "infants",
+						"type": "INT32"
+					},
+					{
+						"name": "children",
+						"type": "INT32"
+					},
+					{
+						"name": "adults",
+						"type": "INT32"
+					},
+					{
+						"name": "currency",
+						"type": "UTF8"
+					},
+					{
+						"name": "total_cost",
+						"type": "DOUBLE"
+					},
+					{
+						"name": "cost_per_adult",
+						"type": "DOUBLE"
+					},
+					{
+						"name": "baggage_allowance",
+						"type": "UTF8"
+					},
+					{
+						"name": "last_update",
+						"type": "UTF8"
+					},
+					{
+						"name": "search_date",
+						"type": "UTF8"
+					},
+					{
+						"name": "route",
+						"type": "UTF8"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/linkedServices/synw-flights-bronze-layer-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/synw-flights-bronze-layer-WorkspaceDefaultSqlServer')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"parameters": {
+					"DBName": {
+						"type": "String"
+					}
+				},
+				"annotations": [],
+				"type": "AzureSqlDW",
+				"typeProperties": {
+					"connectionString": "[parameters('synw-flights-bronze-layer-WorkspaceDefaultSqlServer_connectionString')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/synw-flights-bronze-layer-WorkspaceDefaultStorage')]",
+			"type": "Microsoft.Synapse/workspaces/linkedServices",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"annotations": [],
+				"type": "AzureBlobFS",
+				"typeProperties": {
+					"url": "[parameters('synw-flights-bronze-layer-WorkspaceDefaultStorage_properties_typeProperties_url')]"
+				},
+				"connectVia": {
+					"referenceName": "AutoResolveIntegrationRuntime",
+					"type": "IntegrationRuntimeReference"
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/integrationRuntimes/AutoResolveIntegrationRuntime')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/AutoResolveIntegrationRuntime')]",
+			"type": "Microsoft.Synapse/workspaces/integrationRuntimes",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "Managed",
+				"typeProperties": {
+					"computeProperties": {
+						"location": "AutoResolve",
+						"dataFlowProperties": {
+							"computeType": "General",
+							"coreCount": 8,
+							"timeToLive": 0
+						}
+					}
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/DataflowWriting')]",
+			"type": "Microsoft.Synapse/workspaces/dataflows",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "flightsparquet",
+								"type": "DatasetReference"
+							},
+							"name": "parquetfiles"
+						}
+					],
+					"sinks": [
+						{
+							"name": "sinkSQLPool",
+							"rejectedDataLinkedService": {
+								"referenceName": "synw-flights-bronze-layer-WorkspaceDefaultStorage",
+								"type": "LinkedServiceReference"
+							}
+						}
+					],
+					"transformations": [],
+					"scriptLines": [
+						"source(output(",
+						"          id as string,",
+						"          flight_code as string,",
+						"          file_path as string,",
+						"          source as string,",
+						"          outbound_departure_datetime as string,",
+						"          inbound_departure_datetime as string,",
+						"          city_pair as string,",
+						"          country as string,",
+						"          cabin_class as string,",
+						"          airport_code as string,",
+						"          fare_type as string,",
+						"          passengers as integer,",
+						"          infants as integer,",
+						"          children as integer,",
+						"          adults as integer,",
+						"          currency as string,",
+						"          total_cost as double,",
+						"          cost_per_adult as double,",
+						"          baggage_allowance as string,",
+						"          last_update as string,",
+						"          search_date as string,",
+						"          route as string",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     ignoreNoFilesFound: false,",
+						"     format: 'parquet') ~> parquetfiles",
+						"parquetfiles sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     store: 'synapse',",
+						"     databaseType: 'spark',",
+						"     format: 'table',",
+						"     database: 'default',",
+						"     tableName: 'flightsDB_historical',",
+						"     recreate:true,",
+						"     partitionBy('hash', 15,",
+						"          route",
+						"     )) ~> sinkSQLPool"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('workspaceId'), '/datasets/flightsparquet')]",
+				"[concat(variables('workspaceId'), '/linkedServices/synw-flights-bronze-layer-WorkspaceDefaultStorage')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/WorkspaceSystemIdentity')]",
+			"type": "Microsoft.Synapse/workspaces/credentials",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"type": "ManagedIdentity",
+				"typeProperties": {}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQL script 1')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "CREATE VIEW flightsDBView AS\n\nWITH base_table AS\n(\n    SELECT * \n    FROM [default].[dbo].[flightsDB_historical] \n    WHERE [route] IN (\n        'EWR-CAI', 'FLL-LIS', 'JFK-ATH', 'JFK-CAI', 'LAX-ATH', 'LGA-CAI', 'LGW-IST', 'LGW-NRT', 'LHR-AMM',\n        'LHR-DEL', 'LHR-HND', 'LHR-IST', 'LHR-LIM', 'LHR-NRT', 'LHR-SAW', 'MIA-LIS', 'STN-AMM', 'STN-SAW',\n        'YTZ-ATH', 'YTZ-LIS', 'YYZ-ATH', 'YYZ-JNB', 'YYZ-LIS', 'JFK-JNB', 'YYZ-UIO', 'LAX-JNB', 'LHR-JNB',\n        'LHR-SJO', 'SFO-LIS', 'YUL-LIS', 'LAX-LIM', 'YYZ-LIM', 'LAX-LIS', 'MIA-LIM', 'LAX-IST', 'LAX-UIO'\n    ) \n    AND [cabin_class] = 'CAB_ECONOMY'\n),\nraw_data AS (\n    SELECT\n        CASE WHEN DATEPART(HOUR, [outbound_departure_datetime]) < 12 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS outbound_am,\n        CASE WHEN DATEPART(HOUR, [inbound_departure_datetime]) < 12 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END AS inbound_am,\n        CAST([outbound_departure_datetime] AS DATE) AS outboundDepartureDate,\n        CAST([inbound_departure_datetime] AS DATE) AS inboundDepartureDate,\n        CAST([search_date] AS DATE) AS searchDate,\n        baggage_allowance,\n        route,\n        AVG([total_cost]) AS meanCost,\n        MIN([total_cost]) AS minCost,\n        MAX([total_cost]) AS maxCost,\n        COUNT([total_cost]) AS countCost\n    FROM base_table\n    GROUP BY \n        route, \n        CAST([outbound_departure_datetime] AS DATE), \n        CAST([inbound_departure_datetime] AS DATE), \n        CASE WHEN DATEPART(HOUR, [outbound_departure_datetime]) < 12 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END, \n        CASE WHEN DATEPART(HOUR, [inbound_departure_datetime]) < 12 THEN CAST(1 AS BIT) ELSE CAST(0 AS BIT) END, \n        CAST([search_date] AS DATE),\n        baggage_allowance\n),\nfiltered_data AS (\n    SELECT \n        route, \n        outboundDepartureDate, \n        inboundDepartureDate, \n        outbound_am, \n        inbound_am, \n        baggage_allowance\n    FROM raw_data\n    GROUP BY \n        route, \n        outboundDepartureDate, \n        inboundDepartureDate, \n        outbound_am, \n        inbound_am, \n        baggage_allowance\n)\nSELECT a.*\nFROM raw_data AS a\nINNER JOIN filtered_data AS b\nON \n    a.route = b.route\n    AND a.outboundDepartureDate = b.outboundDepartureDate\n    AND a.inboundDepartureDate = b.inboundDepartureDate\n    AND a.outbound_am = b.outbound_am\n    AND a.inbound_am = b.inbound_am\n    AND a.baggage_allowance = b.baggage_allowance;",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "default",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQL script 2')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "SELECT TOP (100) [id]\n,[flight_code]\n,[file_path]\n,[source]\n,[outbound_departure_datetime]\n,[inbound_departure_datetime]\n,[route]\n,[city_pair]\n,[country]\n,[cabin_class]\n,[airport_code]\n,[fare_type]\n,[passengers]\n,[infants]\n,[children]\n,[adults]\n,[currency]\n,[total_cost]\n,[cost_per_adult]\n,[baggage_allowance]\n,[last_update]\n,[search_date]\n FROM [default].[dbo].[flights_historical]",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "default",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/SQL script 3')]",
+			"type": "Microsoft.Synapse/workspaces/sqlscripts",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"content": {
+					"query": "SELECT [search_date], count(*)\n FROM [default].[dbo].[flightsDB_historical]\n GROUP BY [search_date];\n\nSELECT COUNT(*)  FROM [default].[dbo].[flightsDB_historical];",
+					"metadata": {
+						"language": "sql"
+					},
+					"currentConnection": {
+						"databaseName": "default",
+						"poolName": "Built-in"
+					},
+					"resultLimit": 5000
+				},
+				"type": "SqlQuery"
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/01-data-ingestion')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "sparkpool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "true",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "cd0561af-a98c-445f-9aa5-353dad9c2ff6"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/98fb3285-f648-4b06-80a4-01c259978e8f/resourceGroups/flights-mlops-proof-of-concept/providers/Microsoft.Synapse/workspaces/synw-flights-bronze-layer/bigDataPools/sparkpool",
+						"name": "sparkpool",
+						"type": "Spark",
+						"endpoint": "https://synw-flights-bronze-layer.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparkpool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 3600
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"from pyspark.sql import SparkSession, DataFrame\r\n",
+							"from pyspark.sql.types import StringType, IntegerType, DoubleType, StructType, StructField\r\n",
+							"from datetime import datetime, timedelta\r\n",
+							"import uuid\r\n",
+							"import random\r\n",
+							"from functools import reduce"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"tags": [
+								"parameters"
+							]
+						},
+						"source": [
+							"## Pass parameter from Synapse dataflow\r\n",
+							"'''\r\n",
+							"# Date range from 2023-07-01 to 2024-07-01\r\n",
+							"start_date = datetime(2023, 7, 1)\r\n",
+							"end_date = datetime(2023, 7, 31)\r\n",
+							"date_range = [start_date + timedelta(days=i) for i in range((end_date - start_date).days)]\r\n",
+							"'''\r\n",
+							"\r\n",
+							"start_date_param = \"\"\r\n",
+							"end_date_param = \"\"\r\n",
+							"dummy_rows_param = \"\""
+						],
+						"outputs": [],
+						"execution_count": 3
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"tags": []
+						},
+						"source": [
+							"################ Params ################\r\n",
+							"\r\n",
+							"start_date = datetime.strptime(start_date_param, \"%Y-%m-%d\")\r\n",
+							"end_date = datetime.strptime(end_date_param, \"%Y-%m-%d\")\r\n",
+							"\r\n",
+							"\r\n",
+							"# Providers\r\n",
+							"providers = [\r\n",
+							"    \"TRAVELFUSION/americanAirlines\", \"AMADEUS/voyzant\", \"AMADEUS/picasso\",\r\n",
+							"    \"AMADEUS/aerticket\", \"AMADEUS/amadeus\", \"TRAVELFUSION/lufthansa\", \"TRAVELFUSION/travelfusion\"\r\n",
+							"]\r\n",
+							"\r\n",
+							"# Routes\r\n",
+							"routes = [\r\n",
+							"    'EWR-CAI', 'FLL-LIS', 'JFK-ATH', 'JFK-CAI', 'LAX-ATH', 'LGA-CAI', 'LGW-IST', 'LGW-NRT', 'LHR-AMM',\r\n",
+							"    'LHR-DEL', 'LHR-HND', 'LHR-IST', 'LHR-LIM', 'LHR-NRT', 'LHR-SAW', 'MIA-LIS', 'STN-AMM', 'STN-SAW',\r\n",
+							"    'YTZ-ATH', 'YTZ-LIS', 'YYZ-ATH', 'YYZ-JNB', 'YYZ-LIS', 'JFK-JNB', 'YYZ-UIO', 'LAX-JNB', 'LHR-JNB',\r\n",
+							"    'LHR-SJO', 'SFO-LIS', 'YUL-LIS', 'LAX-LIM', 'YYZ-LIM', 'LAX-LIS', 'MIA-LIM', 'LAX-IST', 'LAX-UIO'\r\n",
+							"]\r\n",
+							"\r\n",
+							"# Currencies\r\n",
+							"currencies = [\r\n",
+							"    \"EUR\", \"COP\", \"MXN\", \"USD\", \"CAD\", \"GBP\"\r\n",
+							"]\r\n",
+							"\r\n",
+							"baggage = [\r\n",
+							"    \"0PC\", \"1PC\", \"2PC\", \"3PC\"\r\n",
+							"]\r\n",
+							"\r\n",
+							"\r\n",
+							"################ Functions ################\r\n",
+							"\r\n",
+							"# Function to generate rows in PySpark DataFrame format\r\n",
+							"def generate_rows_for_date(date, num_rows):\r\n",
+							"    rows = []\r\n",
+							"    for _ in range(num_rows):\r\n",
+							"        total_person = random.randint(1, 5)\r\n",
+							"        total_flight_cost = random.uniform(21.23, 100000.4)\r\n",
+							"        total_flight_cost_per_passenger = total_flight_cost / total_person\r\n",
+							"        rows.append((\r\n",
+							"            str(uuid.uuid4()),  # id\r\n",
+							"            f\"L1{{{random.choice(routes)}}}_L2{random.randint(1000, 9999)}{random.choice(baggage)}\",  # flight_code\r\n",
+							"            f\"flightHistory/{date.strftime('%Y-%m-%d')}/{uuid.uuid4().hex}.json.gz\",  # file_path\r\n",
+							"            random.choice(providers),  # source\r\n",
+							"            date.strftime(\"%Y-%m-%d\"),  # search_date\r\n",
+							"            (date + timedelta(days=10, hours=10, minutes=25)).strftime(\"%Y-%m-%d %H:%M:%S\"),  # outbound_departure_datetime\r\n",
+							"            (date + timedelta(days=15, hours=10, minutes=25)).strftime(\"%Y-%m-%d %H:%M:%S\"),  # inbound_departure_datetime\r\n",
+							"            random.choice(routes),  # route\r\n",
+							"            \"BUE\",  # city_pair\r\n",
+							"            \"AR\",  # country\r\n",
+							"            \"CAB_ECONOMY\",  # cabin_class\r\n",
+							"            \"AEP\",  # airport_code\r\n",
+							"            \"publishedFare\",  # fare_type\r\n",
+							"            total_person,  # passengers\r\n",
+							"            random.randint(0, 1),  # infants\r\n",
+							"            random.randint(0, 2),  # children\r\n",
+							"            total_person,  # adults\r\n",
+							"            random.choice(currencies),  # currency\r\n",
+							"            total_flight_cost,  # total_cost\r\n",
+							"            total_flight_cost_per_passenger,  # cost_per_adult\r\n",
+							"            random.choice(baggage),  # baggage_allowance\r\n",
+							"            date.strftime(\"%Y-%m-%d %H:%M:%S\")  # last_update\r\n",
+							"        ))\r\n",
+							"    return rows\r\n",
+							"\r\n",
+							"#### Create the dataframe\r\n",
+							"def create_dataframe(rows_list):\r\n",
+							"    # Create RDD from all_rows\r\n",
+							"    rdd = spark.sparkContext.parallelize(rows_list)\r\n",
+							"\r\n",
+							"    # Create DataFrame schema\r\n",
+							"    schema = StructType([\r\n",
+							"        StructField(\"id\", StringType(), True),\r\n",
+							"        StructField(\"flight_code\", StringType(), True),\r\n",
+							"        StructField(\"file_path\", StringType(), True),\r\n",
+							"        StructField(\"source\", StringType(), True),\r\n",
+							"        StructField(\"search_date\", StringType(), True),\r\n",
+							"        StructField(\"outbound_departure_datetime\", StringType(), True),\r\n",
+							"        StructField(\"inbound_departure_datetime\", StringType(), True),\r\n",
+							"        StructField(\"route\", StringType(), True),\r\n",
+							"        StructField(\"city_pair\", StringType(), True),\r\n",
+							"        StructField(\"country\", StringType(), True),\r\n",
+							"        StructField(\"cabin_class\", StringType(), True),\r\n",
+							"        StructField(\"airport_code\", StringType(), True),\r\n",
+							"        StructField(\"fare_type\", StringType(), True),\r\n",
+							"        StructField(\"passengers\", IntegerType(), True),\r\n",
+							"        StructField(\"infants\", IntegerType(), True),\r\n",
+							"        StructField(\"children\", IntegerType(), True),\r\n",
+							"        StructField(\"adults\", IntegerType(), True),\r\n",
+							"        StructField(\"currency\", StringType(), True),\r\n",
+							"        StructField(\"total_cost\", DoubleType(), True),\r\n",
+							"        StructField(\"cost_per_adult\", DoubleType(), True),\r\n",
+							"        StructField(\"baggage_allowance\", StringType(), True),\r\n",
+							"        StructField(\"last_update\", StringType(), True)\r\n",
+							"    ])\r\n",
+							"\r\n",
+							"    # Create DataFrame from RDD applying the schema\r\n",
+							"    df = spark.createDataFrame(rdd, schema=schema)\r\n",
+							"    print(\"###--- Dataframe generation executed! ---###\")\r\n",
+							"    return df\r\n",
+							"\r\n",
+							"### Write in DataLakeGen v2\r\n",
+							"def write_datalake(dataframe):\r\n",
+							"    account_name = \"stflightshistorical001\"\r\n",
+							"    container_name = \"azfs-flights-historical\"\r\n",
+							"    relative_path = \"flights-historical\" \r\n",
+							"\r\n",
+							"    # Repartition the DataFrame\r\n",
+							"    dataframe = dataframe.repartition(\"search_date\", \"route\")\r\n",
+							"\r\n",
+							"    # Write DataFrame to Azure Data Lake Gen2 in Parquet format partitioned by search_date and route\r\n",
+							"    dataframe.write \\\r\n",
+							"        .partitionBy(\"search_date\", \"route\") \\\r\n",
+							"        .option(\"compression\", \"snappy\") \\\r\n",
+							"        .mode(\"append\") \\\r\n",
+							"        .parquet(f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\")\r\n",
+							"    \r\n",
+							"    print(f\"###--- Write datalake executed for this search_date---###\")\r\n",
+							"\r\n",
+							"\r\n",
+							"# Function to generate and write data in batches\r\n",
+							"def generate_and_write_data(start_date, end_date, batch_row_threshold, dummy_rows_param=\"true\"):\r\n",
+							"    current_date = start_date\r\n",
+							"    \r\n",
+							"    while current_date <= end_date:\r\n",
+							"        if dummy_rows_param == 'true':\r\n",
+							"            total_rows_for_day = random.randint(1_000_000, 10_500_000)\r\n",
+							"        if dummy_rows_param == 'false':\r\n",
+							"            total_rows_for_day = random.randint(1_000, 10_500)\r\n",
+							"        rows_accumulated = 0\r\n",
+							"\r\n",
+							"        while rows_accumulated < total_rows_for_day:\r\n",
+							"            rows_to_generate = min(batch_row_threshold, total_rows_for_day - rows_accumulated)\r\n",
+							"            rows = generate_rows_for_date(current_date, rows_to_generate)\r\n",
+							"            temp_df = create_dataframe(rows)\r\n",
+							"            write_datalake(temp_df)\r\n",
+							"            rows_accumulated += rows_to_generate\r\n",
+							"\r\n",
+							"            print(f\"Date: {current_date} | Rows written: {rows_accumulated}/{total_rows_for_day}\")\r\n",
+							"        \r\n",
+							"        current_date += timedelta(days=1)\r\n",
+							"\r\n",
+							"# Usage example\r\n",
+							"batch_row_threshold = 1_000_000  # Write data in batches of 1,000,000 rows\r\n",
+							"generate_and_write_data(start_date, end_date, batch_row_threshold)"
+						],
+						"outputs": [],
+						"execution_count": 22
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"spark.close"
+						],
+						"outputs": [],
+						"execution_count": null
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"'''\r\n",
+							"Compression ratio\r\n",
+							"\r\n",
+							"\r\n",
+							"When compressing large datasets partitioned in a data lake using PySpark, the choice of compression codec can significantly affect both the performance and the size of the saved files. Below are some commonly used compression codecs, with a brief overview of their performance and suitability for large datasets:\r\n",
+							"\r\n",
+							"    Snappy:\r\n",
+							"        Pros: Fast compression and decompression, reasonable compression ratio.\r\n",
+							"        Cons: Slightly larger file sizes compared to other codecs like gzip or zstd.\r\n",
+							"        Best Use: When speed is a priority over the compression ratio.\r\n",
+							"    Gzip:\r\n",
+							"        Pros: Good compression ratio.\r\n",
+							"        Cons: Slower compression and decompression compared to snappy.\r\n",
+							"        Best Use: When the compression ratio is more important than speed.\r\n",
+							"    LZO:\r\n",
+							"        Pros: Fast compression and decompression, reasonable compression ratio.\r\n",
+							"        Cons: Not as widely supported as snappy or gzip.\r\n",
+							"        Best Use: Similar to snappy, for scenarios where speed is important.\r\n",
+							"    Brotli:\r\n",
+							"        Pros: Very good compression ratio.\r\n",
+							"        Cons: Slower than gzip, but faster than zstd in many cases.\r\n",
+							"        Best Use: When you need a good balance between compression ratio and speed.\r\n",
+							"    LZ4:\r\n",
+							"        Pros: Extremely fast compression and decompression.\r\n",
+							"        Cons: Lower compression ratio compared to gzip or zstd.\r\n",
+							"        Best Use: When decompression speed is critical (e.g., real-time applications).\r\n",
+							"    Zstandard (zstd):\r\n",
+							"        Pros: Excellent compression ratio, good speed.\r\n",
+							"        Cons: Slightly slower than snappy but generally faster than gzip.\r\n",
+							"        Best Use: When you need a high compression ratio with reasonable speed.\r\n",
+							"\r\n",
+							"Recommended Choice:\r\n",
+							"\r\n",
+							"    For general purposes: Snappy is often recommended due to its balance of speed and compression ratio. It's particularly suitable for big data processing where quick read/write operations are crucial.\r\n",
+							"    For better compression ratio: Zstandard (zstd) is an excellent choice as it offers a good balance of speed and compression efficiency.\r\n",
+							"    For maximum compression ratio: Gzip or Brotli can be considered, but they are slower compared to Snappy and Zstandard.\r\n",
+							"    \r\n",
+							"'''"
+						]
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/02-create-sql-table')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "sparkpool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "false",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "eb253f3c-e8e7-4db5-bc43-16efd6b91571"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/98fb3285-f648-4b06-80a4-01c259978e8f/resourceGroups/flights-mlops-proof-of-concept/providers/Microsoft.Synapse/workspaces/synw-flights-bronze-layer/bigDataPools/sparkpool",
+						"name": "sparkpool",
+						"type": "Spark",
+						"endpoint": "https://synw-flights-bronze-layer.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparkpool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30
+				},
+				"cells": [
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Create SQL table within Synapse Analytics"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"account_name = \"stflightshistorical001\"\r\n",
+							"container_name = \"azfs-flights-historical\"\r\n",
+							"relative_path = \"flights-historical\" \r\n",
+							"\r\n",
+							"final_path = f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\r\n",
+							"\r\n",
+							"\r\n",
+							"q = f\"\"\"\r\n",
+							"SELECT\r\n",
+							"    TOP 100 *\r\n",
+							"FROM\r\n",
+							"    OPENROWSET(\r\n",
+							"        BULK '{final_path}',\r\n",
+							"        FORMAT='PARQUET'\r\n",
+							"    ) AS [result]\r\n",
+							"\r\n",
+							"\"\"\"\r\n",
+							"\r\n",
+							"spark.sql(q)"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"microsoft": {
+								"language": "python"
+							}
+						},
+						"source": [
+							"%%pyspark\n",
+							"account_name = \"stflightshistorical001\"\n",
+							"container_name = \"azfs-flights-historical\"\n",
+							"relative_path = \"flights-historical\" \n",
+							"\n",
+							"final_path = f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\"\n",
+							"\n",
+							"# Create the table pointing to the root folder of the data lake\n",
+							"spark.sql(f\"\"\"\n",
+							"    CREATE TABLE IF NOT EXISTS default.flights_historical (\n",
+							"        id STRING,\n",
+							"        flight_code STRING,\n",
+							"        file_path STRING,\n",
+							"        source STRING,\n",
+							"        search_date STRING,\n",
+							"        outbound_departure_datetime STRING,\n",
+							"        inbound_departure_datetime STRING,\n",
+							"        route STRING,\n",
+							"        city_pair STRING,\n",
+							"        country STRING,\n",
+							"        cabin_class STRING,\n",
+							"        airport_code STRING,\n",
+							"        fare_type STRING,\n",
+							"        passengers INT,\n",
+							"        infants INT,\n",
+							"        children INT,\n",
+							"        adults INT,\n",
+							"        currency STRING,\n",
+							"        total_cost DOUBLE,\n",
+							"        cost_per_adult DOUBLE,\n",
+							"        baggage_allowance STRING,\n",
+							"        last_update STRING\n",
+							"    )\n",
+							"    USING Parquet\n",
+							"    LOCATION '{final_path}'\n",
+							"\"\"\")"
+						],
+						"outputs": [],
+						"execution_count": 11
+					},
+					{
+						"cell_type": "markdown",
+						"metadata": {
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# SQL Query through Synapse Analytics"
+						]
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"# Select data from a specific partition\r\n",
+							"df = spark.sql(\"\"\"\r\n",
+							"    SELECT * FROM default.flights_historical\r\n",
+							"    WHERE search_date = '2023-07-01'\r\n",
+							"\"\"\")\r\n",
+							"\r\n",
+							"# Show the DataFrame\r\n",
+							"df.show()"
+						],
+						"outputs": [],
+						"execution_count": null
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/03-read-datalake')]",
+			"type": "Microsoft.Synapse/workspaces/notebooks",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"nbformat": 4,
+				"nbformat_minor": 2,
+				"bigDataPool": {
+					"referenceName": "sparkpool",
+					"type": "BigDataPoolReference"
+				},
+				"sessionProperties": {
+					"driverMemory": "28g",
+					"driverCores": 4,
+					"executorMemory": "28g",
+					"executorCores": 4,
+					"numExecutors": 2,
+					"conf": {
+						"spark.dynamicAllocation.enabled": "true",
+						"spark.dynamicAllocation.minExecutors": "2",
+						"spark.dynamicAllocation.maxExecutors": "2",
+						"spark.autotune.trackingId": "3be48c02-e8c5-4c0c-8870-15e54af18fc6"
+					}
+				},
+				"metadata": {
+					"saveOutput": true,
+					"enableDebugMode": false,
+					"kernelspec": {
+						"name": "synapse_pyspark",
+						"display_name": "Synapse PySpark"
+					},
+					"language_info": {
+						"name": "python"
+					},
+					"a365ComputeOptions": {
+						"id": "/subscriptions/98fb3285-f648-4b06-80a4-01c259978e8f/resourceGroups/flights-mlops-proof-of-concept/providers/Microsoft.Synapse/workspaces/synw-flights-bronze-layer/bigDataPools/sparkpool",
+						"name": "sparkpool",
+						"type": "Spark",
+						"endpoint": "https://synw-flights-bronze-layer.dev.azuresynapse.net/livyApi/versions/2019-11-01-preview/sparkPools/sparkpool",
+						"auth": {
+							"type": "AAD",
+							"authResource": "https://dev.azuresynapse.net"
+						},
+						"sparkVersion": "3.3",
+						"nodeCount": 3,
+						"cores": 4,
+						"memory": 28
+					},
+					"sessionKeepAliveTimeout": 30,
+					"targetSparkConfiguration": "sparkConfiguration1"
+				},
+				"cells": [
+					{
+						"cell_type": "code",
+						"source": [
+							"account_name = \"stflightshistorical001\"\r\n",
+							"container_name = \"azfs-flights-historical\"\r\n",
+							"relative_path = \"flights-historical\"\r\n",
+							"\r\n",
+							"# Define the path to the data\r\n",
+							"data_path = f\"abfss://{container_name}@{account_name}.dfs.core.windows.net/{relative_path}/\"\r\n",
+							"\r\n",
+							"# Read the data from the specified path\r\n",
+							"df = spark.read.parquet(data_path)\r\n",
+							"\r\n",
+							"# Show the DataFrame\r\n",
+							"df.show()"
+						],
+						"outputs": [],
+						"execution_count": 1
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"df.count()"
+						],
+						"outputs": [],
+						"execution_count": 2
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							}
+						},
+						"source": [
+							"df.select('id').distinct().count()"
+						],
+						"outputs": [],
+						"execution_count": 5
+					},
+					{
+						"cell_type": "code",
+						"metadata": {
+							"jupyter": {
+								"source_hidden": false,
+								"outputs_hidden": false
+							},
+							"nteract": {
+								"transient": {
+									"deleting": false
+								}
+							},
+							"collapsed": false
+						},
+						"source": [
+							"-- %%sql\r\n",
+							"\r\n",
+							"-- DROP TABLE default.flights_historical;"
+						],
+						"outputs": [],
+						"execution_count": 10
+					}
+				]
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('workspaceName'), '/sparkpool')]",
+			"type": "Microsoft.Synapse/workspaces/bigDataPools",
+			"apiVersion": "2019-06-01-preview",
+			"properties": {
+				"autoPause": {
+					"enabled": true,
+					"delayInMinutes": 45
+				},
+				"autoScale": {
+					"enabled": true,
+					"maxNodeCount": 24,
+					"minNodeCount": 3
+				},
+				"nodeCount": 3,
+				"nodeSize": "Large",
+				"nodeSizeFamily": "MemoryOptimized",
+				"sparkVersion": "3.3",
+				"isComputeIsolationEnabled": false,
+				"sessionLevelPackagesEnabled": true,
+				"annotations": []
+			},
+			"dependsOn": [],
+			"location": "eastus"
+		}
+	]
+}
