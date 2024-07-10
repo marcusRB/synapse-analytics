@@ -1,5 +1,5 @@
 {
-	"name": "Spark job definition 1",
+	"name": "Spark job parallel process",
 	"properties": {
 		"targetBigDataPool": {
 			"referenceName": "sparkpool",
@@ -9,14 +9,14 @@
 		"language": "python",
 		"scanFolder": false,
 		"jobProperties": {
-			"name": "Spark job definition 1",
+			"name": "Spark job parallel process",
 			"file": "abfss://azfs-flights-historical@stflightshistorical001.dfs.core.windows.net/synapse/workspaces/synw-flights-bronze-layer/batchjobs/Spark%20job%20definition%201/04_data_ingestion_concurrent.py",
 			"conf": {
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "7",
-				"spark.autotune.trackingId": "8cf46196-2055-4fa6-a4f7-d2c817c86027",
-				"spark.synapse.context.sjdname": "Spark job definition 1"
+				"spark.autotune.trackingId": "dec931f2-3c9e-4864-9eed-795da84b75b6",
+				"spark.synapse.context.sjdname": "Spark job parallel process"
 			},
 			"args": [
 				"--start_date",
@@ -31,10 +31,10 @@
 				""
 			],
 			"files": [],
-			"driverMemory": "112g",
-			"driverCores": 16,
-			"executorMemory": "112g",
-			"executorCores": 16,
+			"driverMemory": "28g",
+			"driverCores": 4,
+			"executorMemory": "28g",
+			"executorCores": 4,
 			"numExecutors": 1
 		}
 	}

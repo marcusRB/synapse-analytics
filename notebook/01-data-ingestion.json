@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "2",
 				"spark.dynamicAllocation.maxExecutors": "2",
-				"spark.autotune.trackingId": "fc0431e8-eaf1-4c48-815d-a8d9143bc3be"
+				"spark.autotune.trackingId": "f01ba318-0a5b-4215-a3c4-83789e08fa85"
 			}
 		},
 		"metadata": {
@@ -41,8 +41,8 @@
 				},
 				"sparkVersion": "3.3",
 				"nodeCount": 3,
-				"cores": 16,
-				"memory": 112,
+				"cores": 4,
+				"memory": 28,
 				"automaticScaleJobs": true
 			},
 			"sessionKeepAliveTimeout": 3600
@@ -243,7 +243,7 @@
 					"    \r\n",
 					"    while current_date <= end_date:\r\n",
 					"        if dummy_rows_param == 'true':\r\n",
-					"            total_rows_for_day = random.randint(1_000_000, 10_500_000)\r\n",
+					"            total_rows_for_day = random.randint(100_000, 1_000_000)\r\n",
 					"        if dummy_rows_param == 'false':\r\n",
 					"            total_rows_for_day = random.randint(1_000, 10_500)\r\n",
 					"        rows_accumulated = 0\r\n",
@@ -260,7 +260,7 @@
 					"        current_date += timedelta(days=1)\r\n",
 					"\r\n",
 					"# Usage example\r\n",
-					"batch_row_threshold = 1_000_000  # Write data in batches of 1,000,000 rows\r\n",
+					"batch_row_threshold = 50_000  # Write data in batches of 1,000,000 rows\r\n",
 					"generate_and_write_data(start_date, end_date, batch_row_threshold)"
 				],
 				"execution_count": 22

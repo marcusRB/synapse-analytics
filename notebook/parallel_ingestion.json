@@ -17,7 +17,7 @@
 				"spark.dynamicAllocation.enabled": "true",
 				"spark.dynamicAllocation.minExecutors": "1",
 				"spark.dynamicAllocation.maxExecutors": "7",
-				"spark.autotune.trackingId": "deaec957-8454-48da-b506-1d778a996637"
+				"spark.autotune.trackingId": "2e0d9c50-257e-44f3-b3dd-b34c69321f62"
 			}
 		},
 		"metadata": {
@@ -41,8 +41,8 @@
 				},
 				"sparkVersion": "3.3",
 				"nodeCount": 3,
-				"cores": 16,
-				"memory": 112,
+				"cores": 4,
+				"memory": 28,
 				"automaticScaleJobs": true
 			},
 			"sessionKeepAliveTimeout": 30
@@ -50,6 +50,17 @@
 		"cells": [
 			{
 				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
 				"source": [
 					"from azure.storage.blob import BlobServiceClient\r\n",
 					"import pandas as pd\r\n",
@@ -61,8 +72,42 @@
 					"import gzip\r\n",
 					"import time\r\n",
 					"from datetime import datetime, timedelta\r\n",
+					"from pyspark.sql import SparkSession\r\n",
+					"from pyspark.sql.types import StructType, StructField, StringType, IntegerType, FloatType\r\n",
 					"from concurrent.futures import ThreadPoolExecutor, as_completed\r\n",
-					"import argparse\r\n",
+					"import argparse"
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"metadata": {
+					"jupyter": {
+						"source_hidden": false,
+						"outputs_hidden": false
+					},
+					"nteract": {
+						"transient": {
+							"deleting": false
+						}
+					}
+				},
+				"source": [
+					"## Pass parameter from Synapse dataflow\r\n",
+					"\r\n",
+					"start_date_param = \"\"\r\n",
+					"end_date_param = \"\"\r\n",
+					"dummy_rows_param = \"\""
+				],
+				"execution_count": null
+			},
+			{
+				"cell_type": "code",
+				"source": [
+					"\r\n",
+					"\r\n",
+					"# Initialize Spark session\r\n",
+					"spark = SparkSession.builder.appName(\"FlightDataGenerator\").getOrCreate()\r\n",
 					"\r\n",
 					"# Configure Azure Blob Storage\r\n",
 					"blob_service_client = BlobServiceClient.from_connection_string(\"your_connection_string\")\r\n",
@@ -92,6 +137,32 @@
 					"baggage = [\r\n",
 					"    \"0PC\", \"1PC\", \"2PC\", \"3PC\"\r\n",
 					"]\r\n",
+					"\r\n",
+					"# Schema for the data\r\n",
+					"schema = StructType([\r\n",
+					"    StructField(\"id\", StringType(), False),\r\n",
+					"    StructField(\"flight_code\", StringType(), False),\r\n",
+					"    StructField(\"file_path\", StringType(), False),\r\n",
+					"    StructField(\"source\", StringType(), False),\r\n",
+					"    StructField(\"search_date\", StringType(), False),\r\n",
+					"    StructField(\"outbound_departure_datetime\", StringType(), False),\r\n",
+					"    StructField(\"inbound_departure_datetime\", StringType(), False),\r\n",
+					"    StructField(\"route\", StringType(), False),\r\n",
+					"    StructField(\"city_pair\", StringType(), False),\r\n",
+					"    StructField(\"country\", StringType(), False),\r\n",
+					"    StructField(\"cabin_class\", StringType(), False),\r\n",
+					"    StructField(\"airport_code\", StringType(), False),\r\n",
+					"    StructField(\"fare_type\", StringType(), False),\r\n",
+					"    StructField(\"passengers\", IntegerType(), False),\r\n",
+					"    StructField(\"infants\", IntegerType(), False),\r\n",
+					"    StructField(\"children\", IntegerType(), False),\r\n",
+					"    StructField(\"adults\", IntegerType(), False),\r\n",
+					"    StructField(\"currency\", StringType(), False),\r\n",
+					"    StructField(\"total_cost\", FloatType(), False),\r\n",
+					"    StructField(\"cost_per_adult\", FloatType(), False),\r\n",
+					"    StructField(\"baggage_allowance\", StringType(), False),\r\n",
+					"    StructField(\"last_update\", StringType(), False)\r\n",
+					"])\r\n",
 					"\r\n",
 					"# Function to generate dummy data for a specific date and route\r\n",
 					"def generate_dummy_data(date, route, rows_per_day):\r\n",
@@ -158,20 +229,23 @@
 					"        # Generate data for current date and route\r\n",
 					"        data = generate_dummy_data(date, route, rows_per_day)\r\n",
 					"        \r\n",
-					"        # Upload data to Azure Blob Storage\r\n",
-					"        upload_to_blob(data, container_name, prefix, date, route)\r\n",
+					"        # Convert data to Spark DataFrame\r\n",
+					"        df = spark.createDataFrame(data, schema=schema)\r\n",
+					"        \r\n",
+					"        # Write DataFrame to Azure Blob Storage\r\n",
+					"        file_path = f\"abfss://{container_name}@{prefix}search_date={date.strftime('%Y-%m-%d')}/route={route}/{date.strftime('%Y-%m-%d')}_{route}.json.gz\"\r\n",
+					"        df.write.json(file_path, mode='overwrite', compression='gzip')\r\n",
 					"        \r\n",
 					"        # Print status message\r\n",
 					"        print(f\"Uploaded {len(data)} records for {date.strftime('%Y-%m-%d')} and route {route}\")\r\n",
 					"        \r\n",
 					"        end_time = time.time()\r\n",
-					"        print(f\"Time taken to read data from Azure Blob Storage for search_date {date}: {end_time - start_time} seconds\")\r\n",
+					"        print(f\"Time taken to upload data for search_date {date}: {end_time - start_time} seconds\")\r\n",
 					"        # Move to the next date\r\n",
 					"        date += timedelta(days=1)\r\n",
 					"\r\n",
 					"# Number of threads to use for parallel execution\r\n",
-					"#num_threads = min(len(routes), os.cpu_count() * 2)  # Adjust as needed\r\n",
-					"num_threads = 50\r\n",
+					"num_threads = min(len(routes), os.cpu_count() * 2)  # Adjust as needed\r\n",
 					"\r\n",
 					"# Execute in parallel for each route\r\n",
 					"with ThreadPoolExecutor(max_workers=num_threads) as executor:\r\n",
@@ -185,7 +259,7 @@
 					"\r\n",
 					"print('Data generation and upload completed.')"
 				],
-				"execution_count": 2
+				"execution_count": 4
 			},
 			{
 				"cell_type": "code",
